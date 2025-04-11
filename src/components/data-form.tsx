@@ -4,8 +4,15 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Copy, Download, Upload } from "lucide-react";
@@ -39,7 +46,7 @@ const DataTable = ({ data }: DataTableProps) => {
                 <TableCell key={header}>{row[header]}</TableCell>
               ))}
             </TableRow>
-          ))}
+        ))}
         </TableBody>
       </Table>
     </div>
@@ -49,8 +56,12 @@ const DataTable = ({ data }: DataTableProps) => {
 const DataForm = () => {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvData, setCsvData] = useState<any[]>([]);
-  const [columnMappings, setColumnMappings] = useState<{ [key: string]: string }>({});
-  const [concatenationRules, setConcatenationRules] = useState<{ [key: string]: string[] }>({});
+  const [columnMappings, setColumnMappings] = useState<{
+    [key: string]: string;
+  }>({});
+  const [concatenationRules, setConcatenationRules] = useState<{
+    [key: string]: string[];
+  }>({});
   const [formattedData, setFormattedData] = useState<any[]>([]);
   const { toast } = useToast();
 
@@ -71,8 +82,8 @@ const DataForm = () => {
         setCsvData(parsedData);
         // Initialize column mappings with empty strings
         const initialMappings: { [key: string]: string } = {};
-        Object.keys(parsedData[0]).forEach(key => {
-          initialMappings[key] = '';
+        Object.keys(parsedData[0]).forEach((key) => {
+          initialMappings[key] = "";
         });
         setColumnMappings(initialMappings);
       } else {
@@ -102,14 +113,14 @@ const DataForm = () => {
   };
 
   const handleColumnMappingChange = (header: string, targetColumn: string) => {
-    setColumnMappings(prevMappings => ({
+    setColumnMappings((prevMappings) => ({
       ...prevMappings,
       [header]: targetColumn,
     }));
 
     // Initialize concatenation rules for the target column
     if (targetColumn && !concatenationRules[targetColumn]) {
-      setConcatenationRules(prevRules => ({
+      setConcatenationRules((prevRules) => ({
         ...prevRules,
         [targetColumn]: [],
       }));
@@ -117,10 +128,10 @@ const DataForm = () => {
   };
 
   const handleColumnSelect = (targetColumn: string, column: string) => {
-    setConcatenationRules(prevRules => {
+    setConcatenationRules((prevRules) => {
       const selectedColumns = prevRules[targetColumn] || [];
       const columnIndex = selectedColumns.indexOf(column);
-  
+
       if (columnIndex > -1) {
         // Column is already selected, remove it
         const newSelectedColumns = [...selectedColumns];
@@ -138,25 +149,24 @@ const DataForm = () => {
       }
     });
   };
-  
 
   const formatData = () => {
-    const formatted: any[] = csvData.map(item => {
+    const formatted: any[] = csvData.map((item) => {
       const newItem: { [key: string]: string } = {};
-      Object.keys(columnMappings).forEach(header => {
+      Object.keys(columnMappings).forEach((header) => {
         const targetColumn = columnMappings[header];
-        if (targetColumn && targetColumn !== 'discard') {
-          newItem[targetColumn] = item[header] || '';
+        if (targetColumn && targetColumn !== "discard") {
+          newItem[targetColumn] = item[header] || "";
         }
       });
 
-      Object.keys(concatenationRules).forEach(targetColumn => {
+      Object.keys(concatenationRules).forEach((targetColumn) => {
         const selectedColumns = concatenationRules[targetColumn];
         if (selectedColumns && selectedColumns.length > 0) {
           try {
             newItem[targetColumn] = selectedColumns
-              .map(col => item[col] || '')
-              .join(' '); // Adjust the join character as needed
+              .map((col) => item[col] || "")
+              .join(" "); // Adjust the join character as needed
           } catch (error) {
             console.error("Error evaluating rule:", error);
             toast({
@@ -164,7 +174,7 @@ const DataForm = () => {
               description: `Error evaluating rule for column ${targetColumn}.`,
               variant: "destructive",
             });
-            newItem[targetColumn] = 'Error';
+            newItem[targetColumn] = "Error";
           }
         }
       });
@@ -183,11 +193,11 @@ const DataForm = () => {
     }
 
     const csv = arrayToCsv(formattedData);
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob([csv], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.setAttribute('href', url);
-    a.setAttribute('download', 'formatted_data.csv');
+    const a = document.createElement("a");
+    a.setAttribute("href", url);
+    a.setAttribute("download", "formatted_data.csv");
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -201,15 +211,18 @@ const DataForm = () => {
   const arrayToCsv = (data: any[]): string => {
     const csvRows = [];
     const headers = Object.keys(data[0]);
-    csvRows.push(headers.join(','));
+    csvRows.push(headers.join(","));
     for (const row of data) {
-      const values = headers.map(header => {
-        const cellValue = row[header] === null || row[header] === undefined ? '' : String(row[header]);
+      const values = headers.map((header) => {
+        const cellValue =
+          row[header] === null || row[header] === undefined
+            ? ""
+            : String(row[header]);
         return JSON.stringify(cellValue);
       });
-      csvRows.push(values.join(','));
+      csvRows.push(values.join(","));
     }
-    return csvRows.join('\n');
+    return csvRows.join("\n");
   };
 
   const handleCopyData = () => {
@@ -222,14 +235,15 @@ const DataForm = () => {
     }
 
     const csvString = arrayToCsv(formattedData);
-    navigator.clipboard.writeText(csvString)
+    navigator.clipboard
+      .writeText(csvString)
       .then(() => {
         toast({
           title: "Success",
           description: "Data copied to clipboard!",
         });
       })
-      .catch(err => {
+      .catch((err) => {
         toast({
           title: "Error",
           description: "Failed to copy data to clipboard.",
@@ -257,9 +271,8 @@ const DataForm = () => {
     "Telefone 2",
     "Email",
     "Vendedor",
-    "discard"
+    "discard",
   ];
-
 
   return (
     <div className="container py-8">
@@ -267,7 +280,13 @@ const DataForm = () => {
         <Label htmlFor="csvUpload" className="mr-2">
           Upload CSV File:
         </Label>
-        <Input type="file" id="csvUpload" accept=".csv, .xlsx" onChange={handleFileChange} className="mb-2" />
+        <Input
+          type="file"
+          id="csvUpload"
+          accept=".csv, .xlsx"
+          onChange={handleFileChange}
+          className="mb-2"
+        />
         {csvFile && <p>Selected file: {csvFile.name}</p>}
       </div>
 
@@ -277,18 +296,22 @@ const DataForm = () => {
             <h2>Column Mapping</h2>
             <p>Map source columns to target columns.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.keys(csvData[0]).map(header => (
+              {Object.keys(csvData[0]).map((header) => (
                 <div key={header} className="flex flex-col">
                   <Label htmlFor={`mapping-${header}`}>{header}</Label>
                   <select
                     id={`mapping-${header}`}
                     className="p-2 border rounded"
-                    value={columnMappings[header] || ''}
-                    onChange={(e) => handleColumnMappingChange(header, e.target.value)}
+                    value={columnMappings[header] || ""}
+                    onChange={(e) =>
+                      handleColumnMappingChange(header, e.target.value)
+                    }
                   >
                     <option value="">Select Target Column</option>
-                    {targetColumns.map(col => (
-                      <option key={col} value={col}>{col}</option>
+                    {targetColumns.map((col) => (
+                      <option key={col} value={col}>
+                        {col}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -299,37 +322,45 @@ const DataForm = () => {
           <div className="mb-4">
             <h2>Concatenation Rules</h2>
             <p>Define rules to concatenate multiple columns into a single target column.</p>
-            {targetColumns.filter(col => col !== 'discard').map(col => (
-              <div key={col} className="mb-2">
-                <Label htmlFor={`rule-${col}`}>{col} Columns:</Label>
-                <div className="flex flex-wrap gap-2">
-                  {Object.keys(csvData[0]).map(header => {
-                    if (columnMappings[header] === col) {
-                      const isSelected = concatenationRules[col]?.includes(header);
-                      const order = concatenationRules[col]?.indexOf(header) ?? -1;
-                      return (
-                        <Button
-                          key={header}
-                          variant={isSelected ? "secondary" : "outline"}
-                          onClick={() => handleColumnSelect(col, header)}
-                        >
-                           {isSelected && (
-                            <span className="absolute top-0 left-1/2 transform -translate-x-1/2 text-xs">
-                              {order + 1}
-                            </span>
-                          )}
-                          {header}
-                        </Button>
-                      );
-                    }
-                    return null;
-                  })}
+            {targetColumns
+              .filter((col) => col !== "discard")
+              .map((col) => (
+                <div key={col} className="mb-2">
+                  <Label htmlFor={`rule-${col}`}>{col} Columns:</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.keys(csvData[0]).map((header) => {
+                      if (columnMappings[header] === col) {
+                        const isSelected = concatenationRules[col]?.includes(
+                          header
+                        );
+                        const order =
+                          concatenationRules[col]?.indexOf(header) ?? -1;
+                        return (
+                          <Button
+                            key={header}
+                            variant={isSelected ? "secondary" : "outline"}
+                            onClick={() => handleColumnSelect(col, header)}
+                          >
+                            {isSelected && (
+                              <span className="absolute top-0 left-1/2 transform -translate-x-1/2 text-xs">
+                                {order + 1}
+                              </span>
+                            )}
+                            {header}
+                          </Button>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
 
-          <Button onClick={formatData} className="mb-4 bg-accent text-white hover:bg-teal-700">
+          <Button
+            onClick={formatData}
+            className="mb-4 bg-accent text-white hover:bg-teal-700"
+          >
             Format Data
           </Button>
         </>
@@ -343,11 +374,17 @@ const DataForm = () => {
           </div>
 
           <div className="flex justify-between">
-            <Button onClick={downloadCSV} className="bg-accent text-white hover:bg-teal-700">
+            <Button
+              onClick={downloadCSV}
+              className="bg-accent text-white hover:bg-teal-700"
+            >
               <Download className="mr-2 h-4 w-4" />
               Download CSV
             </Button>
-            <Button onClick={handleCopyData} className={cn("bg-accent text-white hover:bg-teal-700")}>
+            <Button
+              onClick={handleCopyData}
+              className={cn("bg-accent text-white hover:bg-teal-700")}
+            >
               <Copy className="mr-2 h-4 w-4" />
               Copy Data
             </Button>
