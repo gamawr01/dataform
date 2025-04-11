@@ -284,8 +284,8 @@ const DataForm = () => {
           <div className="mb-4">
             <h2>Concatenation Rules</h2>
             <p>Define rules to concatenate multiple columns into a single target column.</p>
-            {targetColumns.map(col => (
-              <div key={col} className="mb-2">
+            {targetColumns.map((col, index) => (
+              <div key={`${col}-${index}`} className="mb-2">
                 <Label htmlFor={`rule-${col}`}>{col} Rule:</Label>
                 <Textarea
                   id={`rule-${col}`}
