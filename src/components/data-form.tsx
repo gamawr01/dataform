@@ -124,15 +124,15 @@ const DataForm = () => {
     const formatted: any[] = csvData.map((item) => {
       const newItem: { [key: string]: string } = {};
 
-      Object.keys(item).forEach(key => {
-        const targetColumn = columnMappings[key];
-        if (targetColumn && targetColumn !== "discard") {
-          newItem[targetColumn] = item[key] || '';
+      Object.keys(columnMappings).forEach(originalColumn => {
+        const targetColumn = columnMappings[originalColumn];
+        if (targetColumn && targetColumn !== "Descartar") {
+            newItem[targetColumn] = item[originalColumn] || '';
         }
       });
 
       Object.keys(concatenationRules).forEach((targetColumn) => {
-        if (targetColumn !== "discard") {
+        if (targetColumn !== "Descartar") {
           const selectedColumns = concatenationRules[targetColumn];
           if (selectedColumns && selectedColumns.length > 0) {
             try {
@@ -309,7 +309,7 @@ const DataForm = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {targetColumns.map((col) => (
-                        <SelectItem key={col} value={col}>{col}</SelectItem>
+                        <SelectItem key={col} value={col}>{col}>{col}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -321,45 +321,47 @@ const DataForm = () => {
           <div className="mb-4">
             <h2>Regras de Concatenação</h2>
             <p>Defina as regras para concatenar múltiplas colunas em uma única coluna de destino.</p>
-            {targetColumns
-              .filter((col) => col !== "Descartar")
-              .map((col) => (
-                <div key={col} className="mb-2">
-                  <Label htmlFor={`rule-${col}`}>{col} Colunas:</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.keys(csvData[0])
-                      .filter(header => columnMappings[header] === col)
-                      .map(header => {
-                        return (
-                          <div key={header} className="flex items-center">
-                            <Label htmlFor={`order-${col}-${header}`} className="mr-2">
-                              {header}
-                            </Label>
-                            <Select
-                              id={`order-${col}-${header}`}
-                              onValueChange={(value) => {
-                                const order = parseInt(value, 10);
-                                // Ensure the selected column is not discarded
-                                handleConcatenationOrderChange(col, header, order);
-                              }}
-                            >
-                              <SelectTrigger className="w-[80px]">
-                                <SelectValue placeholder="Ordem" defaultValue={getColumnOrder(col, header)?.toString()} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {[...Array(Object.keys(csvData[0]).length)].map((_, i) => (
-                                  <SelectItem key={i + 1} value={(i + 1).toString()}>
-                                    {i + 1}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        );
-                      })}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {targetColumns
+                .filter((col) => col !== "Descartar")
+                .map((col) => (
+                  <div key={col} className="mb-2">
+                    <Label htmlFor={`rule-${col}`}>{col} Colunas:</Label>
+                    <div className="grid grid-cols-3 gap-2 p-4 rounded-md bg-muted">
+                      {Object.keys(csvData[0])
+                        .filter(header => columnMappings[header] === col)
+                        .map(header => {
+                          return (
+                            <div key={header} className="flex items-center">
+                              <Label htmlFor={`order-${col}-${header}`} className="mr-2">
+                                {header}
+                              </Label>
+                              <Select
+                                id={`order-${col}-${header}`}
+                                defaultValue={getColumnOrder(col, header)?.toString() || ""}
+                                onValueChange={(value) => {
+                                  const order = parseInt(value, 10);
+                                  handleConcatenationOrderChange(col, header, order);
+                                }}
+                              >
+                                <SelectTrigger className="w-[80px]">
+                                  <SelectValue placeholder="Ordem" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {[...Array(Object.keys(csvData[0]).length)].map((_, i) => (
+                                    <SelectItem key={i + 1} value={(i + 1).toString()}>
+                                      {i + 1}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          );
+                        })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+            </div>
           </div>
 
           <Button
