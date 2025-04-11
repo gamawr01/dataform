@@ -294,26 +294,28 @@ const DataForm = () => {
 
           <div className="mb-4">
             <h2>Concatenation Rules</h2>
-            <p>Define rules to concatenate multiple columns into a single target column. Select columns to include, click again to remove.</p>
+            <p>Define rules to concatenate multiple columns into a single target column.</p>
             {targetColumns.filter(col => col !== 'discard').map(col => (
               <div key={col} className="mb-2">
                 <Label htmlFor={`rule-${col}`}>{col} Columns:</Label>
                 <div className="flex flex-wrap gap-2">
                   {Object.keys(csvData[0]).map(header => {
-                    if (columnMappings[header] === col || concatenationRules[col]?.includes(header)) {
+                    if (columnMappings[header] === col) {
                       const isSelected = concatenationRules[col]?.includes(header);
+                      const order = concatenationRules[col]?.indexOf(header) ?? -1;
                       return (
-                        <button
+                        <Button
                           key={header}
-                          type="button"
-                          className={cn(
-                            "px-2 py-1 rounded bg-secondary hover:bg-secondary-foreground text-secondary-foreground",
-                            isSelected ? "bg-accent text-accent-foreground" : ""
-                          )}
+                          variant={isSelected ? "secondary" : "outline"}
                           onClick={() => handleColumnSelect(col, header)}
                         >
+                           {isSelected && (
+                            <span className="absolute top-0 left-1/2 transform -translate-x-1/2 text-xs">
+                              {order + 1}
+                            </span>
+                          )}
                           {header}
-                        </button>
+                        </Button>
                       );
                     }
                     return null;
