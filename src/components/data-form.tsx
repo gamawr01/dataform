@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Copy, Download, Upload } from "lucide-react";
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 interface DataTableProps {
   data: any[];
@@ -50,7 +51,7 @@ const DataForm = () => {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvData, setCsvData] = useState<any[]>([]);
   const [columnMappings, setColumnMappings] = useState<{ [key: string]: string }>({});
-  const [concatenationRules, setConcatenationRules] = useState<{ [key: string]: string }>({});
+  const [concatenationRules, setConcatenationRules] = useState<{ [key: string]: string[] }>({});
   const [formattedData, setFormattedData] = useState<any[]>([]);
   const { toast } = useToast();
 
@@ -106,12 +107,20 @@ const DataForm = () => {
       ...prevMappings,
       [header]: targetColumn,
     }));
+
+    // Initialize concatenation rules for the target column
+    if (targetColumn && !concatenationRules[targetColumn]) {
+      setConcatenationRules(prevRules => ({
+        ...prevRules,
+        [targetColumn]: [],
+      }));
+    }
   };
 
-  const handleConcatenationRuleChange = (targetColumn: string, rule: string) => {
+  const handleConcatenationRuleChange = (targetColumn: string, selectedColumns: string[]) => {
     setConcatenationRules(prevRules => ({
       ...prevRules,
-      [targetColumn]: rule,
+      [targetColumn]: selectedColumns,
     }));
   };
 
@@ -126,10 +135,12 @@ const DataForm = () => {
       });
 
       Object.keys(concatenationRules).forEach(targetColumn => {
-        const rule = concatenationRules[targetColumn];
-        if (rule) {
+        const selectedColumns = concatenationRules[targetColumn];
+        if (selectedColumns && selectedColumns.length > 0) {
           try {
-            newItem[targetColumn] = evaluateRule(rule, item);
+            newItem[targetColumn] = selectedColumns
+              .map(col => item[col] || '')
+              .join(' '); // Adjust the join character as needed
           } catch (error) {
             console.error("Error evaluating rule:", error);
             toast({
@@ -144,20 +155,6 @@ const DataForm = () => {
       return newItem;
     });
     setFormattedData(formatted);
-  };
-
-  const evaluateRule = (rule: string, dataItem: any): string => {
-    const matches = rule.matchAll(/{(.*?)}/g);
-    let evaluatedRule = rule;
-    for (const match of matches) {
-      const property = match[1];
-      if (dataItem.hasOwnProperty(property)) {
-        evaluatedRule = evaluatedRule.replace(match[0], dataItem[property]);
-      } else {
-        console.warn(`Property ${property} not found in data item.`);
-      }
-    }
-    return evaluatedRule;
   };
 
   const downloadCSV = () => {
@@ -240,11 +237,33 @@ const DataForm = () => {
     "Bairro",
     "Cidade",
     "Estado",
-    "Telefone",
-    "Telefone",
+    "Telefone 1",
+    "Telefone 2",
     "Email",
     "Vendedor"
   ];
+
+  const onDragEnd = (result: any, targetColumn: string) => {
+    if (!result.destination) {
+      return;
+    }
+
+    const items = reorder(
+      concatenationRules[targetColumn],
+      result.source.index,
+      result.destination.index
+    );
+
+    handleConcatenationRuleChange(targetColumn, items);
+  };
+
+  const reorder = (list: any[], startIndex: number, endIndex: number) => {
+    const result = Array.from(list);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+
+    return result;
+  };
 
   return (
     <div className="container py-8">
@@ -273,8 +292,8 @@ const DataForm = () => {
                   >
                     <option value="">Select Target Column</option>
                     <option value="discard">Discard Column</option>
-                    {targetColumns.map((col, index) => (
-                      <option key={`${col}-${index}`} value={col}>{col}</option>
+                    {targetColumns.map(col => (
+                      <option key={col} value={col}>{col}</option>
                     ))}
                   </select>
                 </div>
@@ -284,17 +303,51 @@ const DataForm = () => {
 
           <div className="mb-4">
             <h2>Concatenation Rules</h2>
-            <p>Define rules to concatenate multiple columns into a single target column.</p>
-            {targetColumns.map((col, index) => (
-              <div key={`${col}-${index}`} className="mb-2">
-                <Label htmlFor={`rule-${col}`}>{col} Rule:</Label>
-                <Textarea
-                  id={`rule-${col}`}
-                  placeholder={`e.g., {column1} - {column2}`}
+            <p>Select and reorder columns to concatenate.</p>
+            {targetColumns.map(col => (
+              <div key={col} className="mb-2">
+                <Label htmlFor={`rule-${col}`}>{col} Columns:</Label>
+                <DragDropContext onDragEnd={(result) => onDragEnd(result, col)}>
+                  <Droppable droppableId={col}>
+                    {(provided) => (
+                      <ul {...provided.droppableProps} ref={provided.innerRef} className="list-none p-0">
+                        {concatenationRules[col]?.map((selectedColumn, index) => (
+                          <Draggable key={selectedColumn} draggableId={selectedColumn} index={index}>
+                            {(provided) => (
+                              <li
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className="bg-secondary p-2 mb-1 rounded flex items-center justify-between"
+                              >
+                                {selectedColumn}
+                              </li>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </ul>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+                <select
+                  multiple
+                  value={concatenationRules[col] || []}
+                  onChange={(e) => {
+                    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                    handleConcatenationRuleChange(col, selectedOptions);
+                  }}
                   className="w-full p-2 border rounded"
-                  value={concatenationRules[col] || ''}
-                  onChange={(e) => handleConcatenationRuleChange(col, e.target.value)}
-                />
+                >
+                  {Object.keys(csvData[0]).map(header => {
+                    // Only show columns that are mapped to this target column
+                    if (Object.keys(columnMappings).find(key => columnMappings[key] === col && key === header)) {
+                      return <option key={header} value={header}>{header}</option>;
+                    } else {
+                      return null;
+                    }
+                  })}
+                </select>
               </div>
             ))}
           </div>
