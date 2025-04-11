@@ -120,7 +120,7 @@ const DataForm = () => {
       const newItem: { [key: string]: string } = {};
       Object.keys(columnMappings).forEach(header => {
         const targetColumn = columnMappings[header];
-        if (targetColumn) {
+        if (targetColumn && targetColumn !== 'discard') {
           newItem[targetColumn] = item[header] || '';
         }
       });
@@ -272,6 +272,7 @@ const DataForm = () => {
                     onChange={(e) => handleColumnMappingChange(header, e.target.value)}
                   >
                     <option value="">Select Target Column</option>
+                    <option value="discard">Discard Column</option>
                     {targetColumns.map((col, index) => (
                       <option key={`${col}-${index}`} value={col}>{col}</option>
                     ))}
