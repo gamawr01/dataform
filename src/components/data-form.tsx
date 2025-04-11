@@ -159,24 +159,14 @@ const DataForm = () => {
           }
         }
       });
-      return newItem;
-    });
 
-    // Filter out columns mapped to "discard"
-    const filteredFormatted = formatted.map(item => {
-      const newItem: { [key: string]: string } = {};
-      Object.keys(item).forEach(key => {
-        const originalColumn = Object.keys(columnMappings).find(
-          k => columnMappings[k] === key
-        );
-  
-        if (!originalColumn || columnMappings[originalColumn] !== 'discard') {
-          newItem[key] = item[key];
-        }
+      const filteredItem: { [key: string]: string } = {};
+      Object.keys(newItem).forEach(key => {
+          filteredItem[key] = newItem[key];
       });
-      return newItem;
+      return filteredItem;
     });
-    setFormattedData(filteredFormatted);
+    setFormattedData(formatted);
   };
 
 
@@ -324,13 +314,14 @@ const DataForm = () => {
                   <Select
                     id={`mapping-${header}`}
                     className="p-2 border rounded"
-                    value={columnMappings[header] || ""}
                     onChange={(e) =>
                       handleColumnMappingChange(header, e.target.value)
                     }
                   >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Target Column"  defaultValue={columnMappings[header] || ""}/>
+                    </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Select Target Column</SelectItem>
                       {targetColumns.map((col) => (
                         <SelectItem key={col} value={col}>{col}</SelectItem>
                       ))}
@@ -367,7 +358,7 @@ const DataForm = () => {
                               }}
                             >
                               <SelectTrigger className="w-[80px]">
-                                <SelectValue placeholder="Order" value={getColumnOrder(col, header)?.toString()} />
+                                <SelectValue placeholder="Order" defaultValue={getColumnOrder(col, header)?.toString()} />
                               </SelectTrigger>
                               <SelectContent>
                                 {[...Array(Object.keys(csvData[0]).length)].map((_, i) => (
