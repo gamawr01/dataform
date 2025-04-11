@@ -127,7 +127,7 @@ const DataForm = () => {
       Object.keys(columnMappings).forEach(originalColumn => {
         const targetColumn = columnMappings[originalColumn];
         if (targetColumn && targetColumn !== "Descartar") {
-            newItem[targetColumn] = item[originalColumn] || '';
+          newItem[targetColumn] = item[originalColumn] || '';
         }
       });
 
@@ -308,9 +308,22 @@ const DataForm = () => {
                       <SelectValue placeholder="Selecione a Coluna de Destino"  />
                     </SelectTrigger>
                     <SelectContent>
-                      {targetColumns.map((col) => (
-                        <SelectItem key={col} value={col}>{col}>{col}</SelectItem>
-                      ))}
+                      {
+                        (() => {
+                          const usedColumns = new Set<string>();
+                          return (
+                            targetColumns.map((col) => {
+                              if (usedColumns.has(col)) {
+                                return null;
+                              }
+                              usedColumns.add(col);
+                              return (
+                                <SelectItem key={col} value={col}>{col}</SelectItem>
+                              );
+                            })
+                          )
+                        })()
+                      }
                     </SelectContent>
                   </Select>
                 </div>
