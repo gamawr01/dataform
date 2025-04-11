@@ -298,7 +298,7 @@ const DataForm = () => {
                   <Label htmlFor={`mapping-${header}`}>{header}</Label>
                   <Select
                     id={`mapping-${header}`}
-                    className="p-2 border rounded"
+                    className="p-2 border rounded bg-muted"
                     defaultValue="discard"
                     onValueChange={(value) =>
                       handleColumnMappingChange(header, value)
