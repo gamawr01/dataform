@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -119,14 +119,18 @@ const DataForm = () => {
   const handleColumnSelect = (targetColumn: string, column: string) => {
     setConcatenationRules(prevRules => {
       const selectedColumns = prevRules[targetColumn] || [];
-      if (selectedColumns.includes(column)) {
+      const columnIndex = selectedColumns.indexOf(column);
+  
+      if (columnIndex > -1) {
         // Column is already selected, remove it
+        const newSelectedColumns = [...selectedColumns];
+        newSelectedColumns.splice(columnIndex, 1); // Remove the column from the array
         return {
           ...prevRules,
-          [targetColumn]: selectedColumns.filter(col => col !== column),
+          [targetColumn]: newSelectedColumns,
         };
       } else {
-        // Column is not selected, add it
+        // Column is not selected, add it to the end
         return {
           ...prevRules,
           [targetColumn]: [...selectedColumns, column],
@@ -134,7 +138,7 @@ const DataForm = () => {
       }
     });
   };
-
+  
 
   const formatData = () => {
     const formatted: any[] = csvData.map(item => {
