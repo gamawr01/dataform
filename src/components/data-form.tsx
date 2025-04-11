@@ -84,7 +84,7 @@ const DataForm = () => {
         // Initialize column mappings with empty strings
         const initialMappings: { [key: string]: string } = {};
         Object.keys(parsedData[0]).forEach((key) => {
-          initialMappings[key] = "";
+          initialMappings[key] = "discard";
         });
         setColumnMappings(initialMappings);
       } else {
@@ -132,21 +132,22 @@ const DataForm = () => {
   const formatData = () => {
     const formatted: any[] = csvData.map((item) => {
       const newItem: { [key: string]: string } = {};
-      Object.keys(columnMappings).forEach((header) => {
-        const targetColumn = columnMappings[header];
+
+      Object.keys(item).forEach(key => {
+        const targetColumn = columnMappings[key];
         if (targetColumn && targetColumn !== "discard") {
-          newItem[targetColumn] = item[header] || "";
+          newItem[targetColumn] = item[key] || '';
         }
       });
 
       Object.keys(concatenationRules).forEach((targetColumn) => {
-        if (targetColumn !== "discard") { // Ensure discarded columns are not processed
+        if (targetColumn !== "discard") {
           const selectedColumns = concatenationRules[targetColumn];
           if (selectedColumns && selectedColumns.length > 0) {
             try {
               newItem[targetColumn] = selectedColumns
                 .map((col) => item[col.column] || "")
-                .join(" "); // Adjust the join character as needed
+                .join(" ");
             } catch (error) {
               console.error("Error evaluating rule:", error);
               toast({
@@ -159,12 +160,7 @@ const DataForm = () => {
           }
         }
       });
-
-      const filteredItem: { [key: string]: string } = {};
-      Object.keys(newItem).forEach(key => {
-          filteredItem[key] = newItem[key];
-      });
-      return filteredItem;
+      return newItem;
     });
     setFormattedData(formatted);
   };
@@ -314,12 +310,13 @@ const DataForm = () => {
                   <Select
                     id={`mapping-${header}`}
                     className="p-2 border rounded"
-                    onChange={(e) =>
-                      handleColumnMappingChange(header, e.target.value)
+                    defaultValue="discard"
+                    onValueChange={(value) =>
+                      handleColumnMappingChange(header, value)
                     }
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Target Column"  defaultValue={columnMappings[header] || ""}/>
+                    <SelectTrigger defaultValue="discard">
+                      <SelectValue placeholder="Select Target Column"  />
                     </SelectTrigger>
                     <SelectContent>
                       {targetColumns.map((col) => (
