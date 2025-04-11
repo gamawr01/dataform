@@ -123,10 +123,14 @@ const DataForm = () => {
   const formatData = () => {
     const formatted: any[] = csvData.map((item) => {
       const newItem: { [key: string]: string } = {};
+       const targetColumnsUsed: { [key: string]: boolean } = {};
+
       Object.keys(item).forEach(originalColumn => {
         const targetColumn = columnMappings[originalColumn];
+
         if (targetColumn && targetColumn !== "Descartar") {
           newItem[targetColumn] = item[originalColumn] || '';
+           targetColumnsUsed[targetColumn] = true;
         }
       });
 
@@ -138,6 +142,7 @@ const DataForm = () => {
               newItem[targetColumn] = selectedColumns
                 .map((col) => item[col.column] || "")
                 .join(" ");
+               targetColumnsUsed[targetColumn] = true;
             } catch (error) {
               console.error("Error evaluating rule:", error);
               toast({
@@ -150,7 +155,16 @@ const DataForm = () => {
           }
         }
       });
-      return newItem;
+
+      // Ensure only columns that are mapped or part of concatenation rules are included
+      const finalItem: { [key: string]: string } = {};
+      Object.keys(newItem)
+        .sort()
+        .forEach(key => {
+          finalItem[key] = newItem[key];
+        });
+
+      return finalItem;
     });
     setFormattedData(formatted);
   };
@@ -273,7 +287,7 @@ const DataForm = () => {
   return (
     <div className="container py-8">
       <div className="mb-4">
-        <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mr-2" style={{fontSize: '16px'}} htmlFor="csvUpload">
+        <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mr-2" style={{fontSize: '18px'}} htmlFor="csvUpload">
           Carregar Arquivo CSV:
         </Label>
         <Input
@@ -281,7 +295,7 @@ const DataForm = () => {
           id="csvUpload"
           accept=".csv, .xlsx"
           onChange={handleFileChange}
-          className="mb-2"
+          className="mb-2 bg-muted"
         />
         {csvFile && <p>Arquivo selecionado: {csvFile.name}</p>}
       </div>
@@ -417,4 +431,5 @@ const DataForm = () => {
 };
 
 export default DataForm;
+
 
