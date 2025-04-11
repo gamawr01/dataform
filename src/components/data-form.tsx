@@ -16,6 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Copy, Download, Upload } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface DataTableProps {
   data: any[];
@@ -60,7 +61,7 @@ const DataForm = () => {
     [key: string]: string;
   }>({});
   const [concatenationRules, setConcatenationRules] = useState<{
-    [key: string]: string[];
+    [key: string]: { column: string; order: number }[];
   }>({});
   const [formattedData, setFormattedData] = useState<any[]>([]);
   const { toast } = useToast();
@@ -119,7 +120,7 @@ const DataForm = () => {
     }));
 
     // Initialize concatenation rules for the target column
-    if (targetColumn && !concatenationRules[targetColumn]) {
+    if (targetColumn && targetColumn !== "discard") {
       setConcatenationRules((prevRules) => ({
         ...prevRules,
         [targetColumn]: [],
@@ -127,27 +128,47 @@ const DataForm = () => {
     }
   };
 
-  const handleColumnSelect = (targetColumn: string, column: string) => {
+  const handleConcatenationOrderChange = (
+    targetColumn: string,
+    column: string,
+    order: number
+  ) => {
     setConcatenationRules((prevRules) => {
       const selectedColumns = prevRules[targetColumn] || [];
-      const columnIndex = selectedColumns.indexOf(column);
+      const existingColumnIndex = selectedColumns.findIndex(
+        (item) => item.column === column
+      );
 
-      if (columnIndex > -1) {
-        // Column is already selected, remove it
-        const newSelectedColumns = [...selectedColumns];
-        newSelectedColumns.splice(columnIndex, 1); // Remove the column from the array
-        return {
-          ...prevRules,
-          [targetColumn]: newSelectedColumns,
-        };
+      let newSelectedColumns;
+
+      if (existingColumnIndex > -1) {
+        // Column is already selected, update the order
+        newSelectedColumns = [...selectedColumns];
+        newSelectedColumns[existingColumnIndex] = { column, order };
       } else {
-        // Column is not selected, add it to the end
-        return {
-          ...prevRules,
-          [targetColumn]: [...selectedColumns, column],
-        };
+        // Column is not selected, add it with the specified order
+        newSelectedColumns = [...selectedColumns, { column, order }];
       }
+
+      // Sort the columns based on the order
+      newSelectedColumns.sort((a, b) => a.order - b.order);
+
+      return {
+        ...prevRules,
+        [targetColumn]: newSelectedColumns,
+      };
     });
+  };
+
+  const isColumnSelected = (targetColumn: string, column: string): boolean => {
+    const selectedColumns = concatenationRules[targetColumn] || [];
+    return selectedColumns.some((item) => item.column === column);
+  };
+
+  const getColumnOrder = (targetColumn: string, column: string): number | undefined => {
+    const selectedColumns = concatenationRules[targetColumn] || [];
+    const selectedItem = selectedColumns.find((item) => item.column === column);
+    return selectedItem ? selectedItem.order : undefined;
   };
 
   const formatData = () => {
@@ -165,7 +186,7 @@ const DataForm = () => {
         if (selectedColumns && selectedColumns.length > 0) {
           try {
             newItem[targetColumn] = selectedColumns
-              .map((col) => item[col] || "")
+              .map((col) => item[col.column] || "")
               .join(" "); // Adjust the join character as needed
           } catch (error) {
             console.error("Error evaluating rule:", error);
@@ -330,24 +351,30 @@ const DataForm = () => {
                   <div className="flex flex-wrap gap-2">
                     {Object.keys(csvData[0]).map((header) => {
                       if (columnMappings[header] === col) {
-                        const isSelected = concatenationRules[col]?.includes(
-                          header
-                        );
-                        const order =
-                          concatenationRules[col]?.indexOf(header) ?? -1;
                         return (
-                          <Button
-                            key={header}
-                            variant={isSelected ? "secondary" : "outline"}
-                            onClick={() => handleColumnSelect(col, header)}
-                          >
-                            {isSelected && (
-                              <span className="absolute top-0 left-1/2 transform -translate-x-1/2 text-xs">
-                                {order + 1}
-                              </span>
-                            )}
-                            {header}
-                          </Button>
+                          <div key={header} className="flex items-center">
+                            <Label htmlFor={`order-${col}-${header}`} className="mr-2">
+                              {header}
+                            </Label>
+                            <Select
+                              id={`order-${col}-${header}`}
+                              onValueChange={(value) => {
+                                const order = parseInt(value, 10);
+                                handleConcatenationOrderChange(col, header, order);
+                              }}
+                            >
+                              <SelectTrigger className="w-[80px]">
+                                <SelectValue placeholder="Order" value={getColumnOrder(col, header)?.toString()} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[...Array(Object.keys(csvData[0]).length)].map((_, i) => (
+                                  <SelectItem key={i + 1} value={(i + 1).toString()}>
+                                    {i + 1}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         );
                       }
                       return null;
