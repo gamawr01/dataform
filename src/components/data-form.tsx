@@ -123,7 +123,6 @@ const DataForm = () => {
   const formatData = () => {
     const formatted: any[] = csvData.map((item) => {
       const newItem: { [key: string]: string } = {};
-
       Object.keys(item).forEach(originalColumn => {
         const targetColumn = columnMappings[originalColumn];
         if (targetColumn && targetColumn !== "Descartar") {
@@ -274,7 +273,7 @@ const DataForm = () => {
   return (
     <div className="container py-8">
       <div className="mb-4">
-        <Label htmlFor="csvUpload" className="mr-2">
+        <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mr-2" style={{fontSize: '16px'}} htmlFor="csvUpload">
           Carregar Arquivo CSV:
         </Label>
         <Input
@@ -418,3 +417,4 @@ const DataForm = () => {
 };
 
 export default DataForm;
+
