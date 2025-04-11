@@ -104,9 +104,9 @@ const DataForm = () => {
     const result: any[] = [];
     for (let i = 1; i < lines.length; i++) {
       const obj: { [key: string]: string } = {};
-      const currentLine = lines[i].split(",").map((item: string) => item.trim());
+      const currentLine = lines[i].split(",");
       for (let j = 0; j < headers.length; j++) {
-        obj[headers[j]] = currentLine[j];
+        obj[headers[j]] = currentLine[j] ? currentLine[j].trim() : "";
       }
       result.push(obj);
     }
@@ -166,7 +166,6 @@ const DataForm = () => {
     const filteredFormatted = formatted.map(item => {
       const newItem: { [key: string]: string } = {};
       Object.keys(item).forEach(key => {
-        // Check if the current key is mapped to 'discard' in columnMappings
         const originalColumn = Object.keys(columnMappings).find(
           k => columnMappings[k] === key
         );
