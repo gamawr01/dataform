@@ -165,21 +165,20 @@ const DataForm = () => {
     // Filter out columns mapped to "discard"
     const filteredFormatted = formatted.map(item => {
       const newItem: { [key: string]: string } = {};
-        Object.keys(item).forEach(key => {
-          const originalColumn = Object.keys(columnMappings).find(
-            k => columnMappings[k] === key
-          );
-    
-          const isDiscarded = originalColumn && columnMappings[originalColumn] === 'discard';
-    
-          if (!isDiscarded) {
-            newItem[key] = item[key];
-          }
-        });
-        return newItem;
+      Object.keys(item).forEach(key => {
+        // Check if the current key is mapped to 'discard' in columnMappings
+        const originalColumn = Object.keys(columnMappings).find(
+          k => columnMappings[k] === key
+        );
+  
+        if (!originalColumn || columnMappings[originalColumn] !== 'discard') {
+          newItem[key] = item[key];
+        }
       });
-      setFormattedData(filteredFormatted);
-    };
+      return newItem;
+    });
+    setFormattedData(filteredFormatted);
+  };
 
 
   const downloadCSV = () => {
@@ -331,10 +330,12 @@ const DataForm = () => {
                       handleColumnMappingChange(header, e.target.value)
                     }
                   >
-                    <option value="">Select Target Column</option>
-                    {targetColumns.map((col) => (
-                      <option key={col} value={col}>{col}</option>
-                    ))}
+                    <SelectContent>
+                      <SelectItem value="">Select Target Column</SelectItem>
+                      {targetColumns.map((col) => (
+                        <SelectItem key={col} value={col}>{col}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
               ))}
