@@ -128,48 +128,6 @@ const DataForm = () => {
     }
   };
 
-  const handleConcatenationOrderChange = (
-    targetColumn: string,
-    column: string,
-    order: number
-  ) => {
-    setConcatenationRules((prevRules) => {
-      const selectedColumns = prevRules[targetColumn] || [];
-      const existingColumnIndex = selectedColumns.findIndex(
-        (item) => item.column === column
-      );
-
-      let newSelectedColumns;
-
-      if (existingColumnIndex > -1) {
-        // Column is already selected, update the order
-        newSelectedColumns = [...selectedColumns];
-        newSelectedColumns[existingColumnIndex] = { column, order };
-      } else {
-        // Column is not selected, add it with the specified order
-        newSelectedColumns = [...selectedColumns, { column, order }];
-      }
-
-      // Sort the columns based on the order
-      newSelectedColumns.sort((a, b) => a.order - b.order);
-
-      return {
-        ...prevRules,
-        [targetColumn]: newSelectedColumns,
-      };
-    });
-  };
-
-  const isColumnSelected = (targetColumn: string, column: string): boolean => {
-    const selectedColumns = concatenationRules[targetColumn] || [];
-    return selectedColumns.some((item) => item.column === column);
-  };
-
-  const getColumnOrder = (targetColumn: string, column: string): number | undefined => {
-    const selectedColumns = concatenationRules[targetColumn] || [];
-    const selectedItem = selectedColumns.find((item) => item.column === column);
-    return selectedItem ? selectedItem.order : undefined;
-  };
 
   const formatData = () => {
     const formatted: any[] = csvData.map((item) => {
@@ -182,27 +140,47 @@ const DataForm = () => {
       });
 
       Object.keys(concatenationRules).forEach((targetColumn) => {
-        const selectedColumns = concatenationRules[targetColumn];
-        if (selectedColumns && selectedColumns.length > 0) {
-          try {
-            newItem[targetColumn] = selectedColumns
-              .map((col) => item[col.column] || "")
-              .join(" "); // Adjust the join character as needed
-          } catch (error) {
-            console.error("Error evaluating rule:", error);
-            toast({
-              title: "Error",
-              description: `Error evaluating rule for column ${targetColumn}.`,
-              variant: "destructive",
-            });
-            newItem[targetColumn] = "Error";
+        if (targetColumn !== "discard") { // Ensure discarded columns are not processed
+          const selectedColumns = concatenationRules[targetColumn];
+          if (selectedColumns && selectedColumns.length > 0) {
+            try {
+              newItem[targetColumn] = selectedColumns
+                .map((col) => item[col.column] || "")
+                .join(" "); // Adjust the join character as needed
+            } catch (error) {
+              console.error("Error evaluating rule:", error);
+              toast({
+                title: "Error",
+                description: `Error evaluating rule for column ${targetColumn}.`,
+                variant: "destructive",
+              });
+              newItem[targetColumn] = "Error";
+            }
           }
         }
       });
       return newItem;
     });
-    setFormattedData(formatted);
-  };
+
+    // Filter out columns mapped to "discard"
+    const filteredFormatted = formatted.map(item => {
+      const newItem: { [key: string]: string } = {};
+        Object.keys(item).forEach(key => {
+          const originalColumn = Object.keys(columnMappings).find(
+            k => columnMappings[k] === key
+          );
+    
+          const isDiscarded = originalColumn && columnMappings[originalColumn] === 'discard';
+    
+          if (!isDiscarded) {
+            newItem[key] = item[key];
+          }
+        });
+        return newItem;
+      });
+      setFormattedData(filteredFormatted);
+    };
+
 
   const downloadCSV = () => {
     if (formattedData.length === 0) {
@@ -231,8 +209,11 @@ const DataForm = () => {
 
   const arrayToCsv = (data: any[]): string => {
     const csvRows = [];
+    if (data.length === 0) return "";
+
     const headers = Object.keys(data[0]);
     csvRows.push(headers.join(","));
+
     for (const row of data) {
       const values = headers.map((header) => {
         const cellValue =
@@ -295,6 +276,28 @@ const DataForm = () => {
     "discard",
   ];
 
+  const handleConcatenationOrderChange = (targetColumn: string, header: string, order: number) => {
+    setConcatenationRules(prevRules => {
+      const newRules = { ...prevRules };
+      if (!newRules[targetColumn]) {
+        newRules[targetColumn] = [];
+      }
+      const existingColumnIndex = newRules[targetColumn].findIndex(col => col.column === header);
+      if (existingColumnIndex !== -1) {
+        newRules[targetColumn][existingColumnIndex] = { column: header, order: order };
+      } else {
+        newRules[targetColumn].push({ column: header, order: order });
+      }
+      newRules[targetColumn].sort((a, b) => a.order - b.order);
+      return newRules;
+    });
+  };
+
+  const getColumnOrder = (targetColumn: string, header: string): number | undefined => {
+    return concatenationRules[targetColumn]?.find(col => col.column === header)?.order;
+  };
+
+
   return (
     <div className="container py-8">
       <div className="mb-4">
@@ -320,7 +323,7 @@ const DataForm = () => {
               {Object.keys(csvData[0]).map((header) => (
                 <div key={header} className="flex flex-col">
                   <Label htmlFor={`mapping-${header}`}>{header}</Label>
-                  <select
+                  <Select
                     id={`mapping-${header}`}
                     className="p-2 border rounded"
                     value={columnMappings[header] || ""}
@@ -330,11 +333,9 @@ const DataForm = () => {
                   >
                     <option value="">Select Target Column</option>
                     {targetColumns.map((col) => (
-                      <option key={col} value={col}>
-                        {col}
-                      </option>
+                      <option key={col} value={col}>{col}</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               ))}
             </div>
@@ -360,6 +361,7 @@ const DataForm = () => {
                               id={`order-${col}-${header}`}
                               onValueChange={(value) => {
                                 const order = parseInt(value, 10);
+                                // Ensure the selected column is not discarded
                                 handleConcatenationOrderChange(col, header, order);
                               }}
                             >
