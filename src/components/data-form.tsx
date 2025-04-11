@@ -116,12 +116,25 @@ const DataForm = () => {
     }
   };
 
-  const handleConcatenationRuleChange = (targetColumn: string, selectedColumns: string[]) => {
-    setConcatenationRules(prevRules => ({
-      ...prevRules,
-      [targetColumn]: selectedColumns,
-    }));
+  const handleColumnSelect = (targetColumn: string, column: string) => {
+    setConcatenationRules(prevRules => {
+      const selectedColumns = prevRules[targetColumn] || [];
+      if (selectedColumns.includes(column)) {
+        // Column is already selected, remove it
+        return {
+          ...prevRules,
+          [targetColumn]: selectedColumns.filter(col => col !== column),
+        };
+      } else {
+        // Column is not selected, add it
+        return {
+          ...prevRules,
+          [targetColumn]: [...selectedColumns, column],
+        };
+      }
+    });
   };
+
 
   const formatData = () => {
     const formatted: any[] = csvData.map(item => {
@@ -243,11 +256,6 @@ const DataForm = () => {
     "discard"
   ];
 
-  const handleColumnSelect = (e: React.ChangeEvent<HTMLSelectElement>, targetColumn: string) => {
-    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-    handleConcatenationRuleChange(targetColumn, selectedOptions);
-  };
-
 
   return (
     <div className="container py-8">
@@ -286,30 +294,31 @@ const DataForm = () => {
 
           <div className="mb-4">
             <h2>Concatenation Rules</h2>
-            <p>Define rules to concatenate multiple columns into a single target column.</p>
+            <p>Define rules to concatenate multiple columns into a single target column. Select columns to include, click again to remove.</p>
             {targetColumns.filter(col => col !== 'discard').map(col => (
               <div key={col} className="mb-2">
                 <Label htmlFor={`rule-${col}`}>{col} Columns:</Label>
-                <select
-                  multiple
-                  value={concatenationRules[col] || []}
-                  onChange={(e) => handleColumnSelect(e, col)}
-                  className="w-full p-2 border rounded"
-                >
+                <div className="flex flex-wrap gap-2">
                   {Object.keys(csvData[0]).map(header => {
                     if (columnMappings[header] === col || concatenationRules[col]?.includes(header)) {
+                      const isSelected = concatenationRules[col]?.includes(header);
                       return (
-                        <option
+                        <button
                           key={header}
-                          value={header}
+                          type="button"
+                          className={cn(
+                            "px-2 py-1 rounded bg-secondary hover:bg-secondary-foreground text-secondary-foreground",
+                            isSelected ? "bg-accent text-accent-foreground" : ""
+                          )}
+                          onClick={() => handleColumnSelect(col, header)}
                         >
                           {header}
-                        </option>
+                        </button>
                       );
                     }
                     return null;
                   })}
-                </select>
+                </div>
               </div>
             ))}
           </div>
