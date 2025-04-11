@@ -308,7 +308,7 @@ const DataForm = () => {
               <div key={col} className="mb-2">
                 <Label htmlFor={`rule-${col}`}>{col} Columns:</Label>
                 <DragDropContext onDragEnd={(result) => onDragEnd(result, col)}>
-                  <Droppable droppableId={col} isDropDisabled={false} isCombineEnabled={false}>
+                  <Droppable droppableId={col} isDropDisabled={false}>
                     {(provided) => (
                       <ul {...provided.droppableProps} ref={provided.innerRef} className="list-none p-0">
                         {concatenationRules[col]?.map((selectedColumn, index) => (
