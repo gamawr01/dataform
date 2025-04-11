@@ -351,8 +351,9 @@ const DataForm = () => {
                 <div key={col} className="mb-2">
                   <Label htmlFor={`rule-${col}`}>{col} Columns:</Label>
                   <div className="flex flex-wrap gap-2">
-                    {Object.keys(csvData[0]).map((header) => {
-                      if (columnMappings[header] === col) {
+                    {Object.keys(csvData[0])
+                      .filter(header => columnMappings[header] === col)
+                      .map(header => {
                         return (
                           <div key={header} className="flex items-center">
                             <Label htmlFor={`order-${col}-${header}`} className="mr-2">
@@ -379,9 +380,7 @@ const DataForm = () => {
                             </Select>
                           </div>
                         );
-                      }
-                      return null;
-                    })}
+                      })}
                   </div>
                 </div>
               ))}
