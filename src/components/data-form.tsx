@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -292,7 +293,8 @@ const DataForm = () => {
                     <option value="">Select Target Column</option>
                     <option value="discard">Discard Column</option>
                     {targetColumns.map(col => (
-                      <option key={col} value={col}>{col}</option>
+                      // Use a unique key for each option
+                      <option key={`${header}-${col}`} value={col}>{col}</option>
                     ))}
                   </select>
                 </div>
@@ -307,7 +309,7 @@ const DataForm = () => {
               <div key={col} className="mb-2">
                 <Label htmlFor={`rule-${col}`}>{col} Columns:</Label>
                 <DragDropContext onDragEnd={(result) => onDragEnd(result, col)}>
-                  <Droppable droppableId={col}>
+                  <Droppable droppableId={col} isDropDisabled={false}>
                     {(provided) => (
                       <ul {...provided.droppableProps} ref={provided.innerRef} className="list-none p-0">
                         {concatenationRules[col]?.map((selectedColumn, index) => (
