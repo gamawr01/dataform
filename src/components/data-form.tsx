@@ -81,10 +81,10 @@ const DataForm = () => {
       const parsedData = csvToArray(csvText);
       if (parsedData.length > 0) {
         setCsvData(parsedData);
-        // Initialize column mappings with empty strings
+        // Initialize column mappings with default strings
         const initialMappings: { [key: string]: string } = {};
         Object.keys(parsedData[0]).forEach((key) => {
-          initialMappings[key] = "discard";
+          initialMappings[key] = "Descartar";
         });
         setColumnMappings(initialMappings);
       } else {
@@ -124,7 +124,7 @@ const DataForm = () => {
     const formatted: any[] = csvData.map((item) => {
       const newItem: { [key: string]: string } = {};
 
-      Object.keys(columnMappings).forEach(originalColumn => {
+      Object.keys(item).forEach(originalColumn => {
         const targetColumn = columnMappings[originalColumn];
         if (targetColumn && targetColumn !== "Descartar") {
           newItem[targetColumn] = item[originalColumn] || '';
@@ -295,19 +295,21 @@ const DataForm = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.keys(csvData[0]).map((header) => (
                 <div key={header} className="flex flex-col">
-                  <Label htmlFor={`mapping-${header}`}>{header}</Label>
+                  <Label htmlFor={`mapping-${header}`} className="mb-1">
+                    {header}
+                  </Label>
                   <Select
                     id={`mapping-${header}`}
-                    className="p-2 border rounded bg-muted"
-                    defaultValue="discard"
+                    className="p-2 rounded bg-muted"
+                    defaultValue="Descartar"
                     onValueChange={(value) =>
                       handleColumnMappingChange(header, value)
                     }
                   >
-                    <SelectTrigger defaultValue="discard">
+                    <SelectTrigger className="bg-muted">
                       <SelectValue placeholder="Selecione a Coluna de Destino"  />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-muted">
                       {
                         (() => {
                           const usedColumns = new Set<string>();
@@ -357,10 +359,10 @@ const DataForm = () => {
                                   handleConcatenationOrderChange(col, header, order);
                                 }}
                               >
-                                <SelectTrigger className="w-[80px]">
+                                <SelectTrigger className="w-[80px] bg-muted">
                                   <SelectValue placeholder="Ordem" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-muted">
                                   {[...Array(Object.keys(csvData[0]).length)].map((_, i) => (
                                     <SelectItem key={i + 1} value={(i + 1).toString()}>
                                       {i + 1}
