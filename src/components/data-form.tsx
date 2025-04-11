@@ -272,8 +272,8 @@ const DataForm = () => {
                     onChange={(e) => handleColumnMappingChange(header, e.target.value)}
                   >
                     <option value="">Select Target Column</option>
-                    {targetColumns.map(col => (
-                      <option key={col} value={col}>{col}</option>
+                    {targetColumns.map((col, index) => (
+                      <option key={`${col}-${index}`} value={col}>{col}</option>
                     ))}
                   </select>
                 </div>
