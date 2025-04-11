@@ -1,3 +1,5 @@
+"use client";
+
 import DataForm from "@/components/data-form";
 
 export default function Home() {
@@ -6,7 +8,7 @@ export default function Home() {
       <main className="flex flex-col items-center justify-center w-full flex-1 px-20 text-center">
         <h1 className="text-4xl font-bold">DataForm</h1>
         <p className="mt-3 text-2xl">
-          Format your data easily with our data formatting tool.
+          Formate seus dados facilmente com nossa ferramenta de formatação de dados.
         </p>
         <DataForm />
       </main>

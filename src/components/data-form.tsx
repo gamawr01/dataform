@@ -24,7 +24,7 @@ interface DataTableProps {
 
 const DataTable = ({ data }: DataTableProps) => {
   if (!data || data.length === 0) {
-    return <p>No data to display.</p>;
+    return <p>Nenhum dado para exibir.</p>;
   }
 
   const headers = Object.keys(data[0]);
@@ -32,7 +32,7 @@ const DataTable = ({ data }: DataTableProps) => {
   return (
     <div className="overflow-x-auto">
       <Table>
-        <TableCaption>A preview of the formatted data.</TableCaption>
+        <TableCaption>Uma prévia dos dados formatados.</TableCaption>
         <TableHeader>
           <TableRow>
             {headers.map((header) => (
@@ -89,8 +89,8 @@ const DataForm = () => {
         setColumnMappings(initialMappings);
       } else {
         toast({
-          title: "Error",
-          description: "Could not parse CSV file.",
+          title: "Erro",
+          description: "Não foi possível analisar o arquivo CSV.",
           variant: "destructive",
         });
       }
@@ -118,16 +118,7 @@ const DataForm = () => {
       ...prevMappings,
       [header]: targetColumn,
     }));
-
-    // Initialize concatenation rules for the target column
-    if (targetColumn && targetColumn !== "discard") {
-      setConcatenationRules((prevRules) => ({
-        ...prevRules,
-        [targetColumn]: [],
-      }));
-    }
   };
-
 
   const formatData = () => {
     const formatted: any[] = csvData.map((item) => {
@@ -151,8 +142,8 @@ const DataForm = () => {
             } catch (error) {
               console.error("Error evaluating rule:", error);
               toast({
-                title: "Error",
-                description: `Error evaluating rule for column ${targetColumn}.`,
+                title: "Erro",
+                description: `Erro ao avaliar a regra para a coluna ${targetColumn}.`,
                 variant: "destructive",
               });
               newItem[targetColumn] = "Error";
@@ -165,12 +156,11 @@ const DataForm = () => {
     setFormattedData(formatted);
   };
 
-
   const downloadCSV = () => {
     if (formattedData.length === 0) {
       toast({
-        title: "Warning",
-        description: "No data to download. Format the data first.",
+        title: "Aviso",
+        description: "Nenhum dado para baixar. Formate os dados primeiro.",
       });
       return;
     }
@@ -180,14 +170,14 @@ const DataForm = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.setAttribute("href", url);
-    a.setAttribute("download", "formatted_data.csv");
+    a.setAttribute("download", "dados_formatados.csv");
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
     toast({
-      title: "Success",
-      description: "Data downloaded successfully.",
+      title: "Sucesso",
+      description: "Dados baixados com sucesso.",
     });
   };
 
@@ -214,8 +204,8 @@ const DataForm = () => {
   const handleCopyData = () => {
     if (formattedData.length === 0) {
       toast({
-        title: "Warning",
-        description: "No data to copy. Format the data first.",
+        title: "Aviso",
+        description: "Nenhum dado para copiar. Formate os dados primeiro.",
       });
       return;
     }
@@ -225,14 +215,14 @@ const DataForm = () => {
       .writeText(csvString)
       .then(() => {
         toast({
-          title: "Success",
-          description: "Data copied to clipboard!",
+          title: "Sucesso",
+          description: "Dados copiados para a área de transferência!",
         });
       })
       .catch((err) => {
         toast({
-          title: "Error",
-          description: "Failed to copy data to clipboard.",
+          title: "Erro",
+          description: "Falha ao copiar dados para a área de transferência.",
           variant: "destructive",
         });
       });
@@ -257,7 +247,7 @@ const DataForm = () => {
     "Telefone 2",
     "Email",
     "Vendedor",
-    "discard",
+    "Descartar",
   ];
 
   const handleConcatenationOrderChange = (targetColumn: string, header: string, order: number) => {
@@ -281,12 +271,11 @@ const DataForm = () => {
     return concatenationRules[targetColumn]?.find(col => col.column === header)?.order;
   };
 
-
   return (
     <div className="container py-8">
       <div className="mb-4">
         <Label htmlFor="csvUpload" className="mr-2">
-          Upload CSV File:
+          Carregar Arquivo CSV:
         </Label>
         <Input
           type="file"
@@ -295,14 +284,14 @@ const DataForm = () => {
           onChange={handleFileChange}
           className="mb-2"
         />
-        {csvFile && <p>Selected file: {csvFile.name}</p>}
+        {csvFile && <p>Arquivo selecionado: {csvFile.name}</p>}
       </div>
 
       {csvData.length > 0 && (
         <>
           <div className="mb-4">
-            <h2>Column Mapping</h2>
-            <p>Map source columns to target columns.</p>
+            <h2>Mapeamento de Colunas</h2>
+            <p>Mapeie as colunas de origem para as colunas de destino.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.keys(csvData[0]).map((header) => (
                 <div key={header} className="flex flex-col">
@@ -316,7 +305,7 @@ const DataForm = () => {
                     }
                   >
                     <SelectTrigger defaultValue="discard">
-                      <SelectValue placeholder="Select Target Column"  />
+                      <SelectValue placeholder="Selecione a Coluna de Destino"  />
                     </SelectTrigger>
                     <SelectContent>
                       {targetColumns.map((col) => (
@@ -330,13 +319,13 @@ const DataForm = () => {
           </div>
 
           <div className="mb-4">
-            <h2>Concatenation Rules</h2>
-            <p>Define rules to concatenate multiple columns into a single target column.</p>
+            <h2>Regras de Concatenação</h2>
+            <p>Defina as regras para concatenar múltiplas colunas em uma única coluna de destino.</p>
             {targetColumns
-              .filter((col) => col !== "discard")
+              .filter((col) => col !== "Descartar")
               .map((col) => (
                 <div key={col} className="mb-2">
-                  <Label htmlFor={`rule-${col}`}>{col} Columns:</Label>
+                  <Label htmlFor={`rule-${col}`}>{col} Colunas:</Label>
                   <div className="flex flex-wrap gap-2">
                     {Object.keys(csvData[0])
                       .filter(header => columnMappings[header] === col)
@@ -355,7 +344,7 @@ const DataForm = () => {
                               }}
                             >
                               <SelectTrigger className="w-[80px]">
-                                <SelectValue placeholder="Order" defaultValue={getColumnOrder(col, header)?.toString()} />
+                                <SelectValue placeholder="Ordem" defaultValue={getColumnOrder(col, header)?.toString()} />
                               </SelectTrigger>
                               <SelectContent>
                                 {[...Array(Object.keys(csvData[0]).length)].map((_, i) => (
@@ -377,7 +366,7 @@ const DataForm = () => {
             onClick={formatData}
             className="mb-4 bg-accent text-white hover:bg-teal-700"
           >
-            Format Data
+            Formatar Dados
           </Button>
         </>
       )}
@@ -385,7 +374,7 @@ const DataForm = () => {
       {formattedData.length > 0 && (
         <>
           <div className="mb-4">
-            <h2>Data Preview</h2>
+            <h2>Prévia dos Dados</h2>
             <DataTable data={formattedData} />
           </div>
 
@@ -395,14 +384,14 @@ const DataForm = () => {
               className="bg-accent text-white hover:bg-teal-700"
             >
               <Download className="mr-2 h-4 w-4" />
-              Download CSV
+              Baixar CSV
             </Button>
             <Button
               onClick={handleCopyData}
               className={cn("bg-accent text-white hover:bg-teal-700")}
             >
               <Copy className="mr-2 h-4 w-4" />
-              Copy Data
+              Copiar Dados
             </Button>
           </div>
         </>
