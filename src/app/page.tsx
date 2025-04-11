@@ -21,7 +21,7 @@ export default function Home() {
             variant={formType === "customer" ? "default" : "secondary"}
             onClick={() => setFormType("customer")}
           >
-            batata
+            Formatar Dados de Pessoas
           </Button>
           <Button
             variant={formType === "product" ? "default" : "secondary"}
