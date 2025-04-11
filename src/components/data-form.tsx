@@ -9,7 +9,6 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Copy, Download, Upload } from "lucide-react";
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 interface DataTableProps {
   data: any[];
@@ -240,30 +239,15 @@ const DataForm = () => {
     "Telefone 1",
     "Telefone 2",
     "Email",
-    "Vendedor"
+    "Vendedor",
+    "discard"
   ];
 
-  const onDragEnd = (result: any, targetColumn: string) => {
-    if (!result.destination) {
-      return;
-    }
-
-    const items = reorder(
-      concatenationRules[targetColumn],
-      result.source.index,
-      result.destination.index
-    );
-
-    handleConcatenationRuleChange(targetColumn, items);
+  const handleColumnSelect = (e: React.ChangeEvent<HTMLSelectElement>, targetColumn: string) => {
+    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+    handleConcatenationRuleChange(targetColumn, selectedOptions);
   };
 
-  const reorder = (list: any[], startIndex: number, endIndex: number) => {
-    const result = Array.from(list);
-    const [removed] = result.splice(startIndex, 1);
-    result.splice(endIndex, 0, removed);
-
-    return result;
-  };
 
   return (
     <div className="container py-8">
@@ -291,7 +275,6 @@ const DataForm = () => {
                     onChange={(e) => handleColumnMappingChange(header, e.target.value)}
                   >
                     <option value="">Select Target Column</option>
-                    <option value="discard">Discard Column</option>
                     {targetColumns.map(col => (
                       <option key={col} value={col}>{col}</option>
                     ))}
@@ -303,49 +286,28 @@ const DataForm = () => {
 
           <div className="mb-4">
             <h2>Concatenation Rules</h2>
-            <p>Select and reorder columns to concatenate.</p>
-            {targetColumns.map(col => (
+            <p>Define rules to concatenate multiple columns into a single target column.</p>
+            {targetColumns.filter(col => col !== 'discard').map(col => (
               <div key={col} className="mb-2">
                 <Label htmlFor={`rule-${col}`}>{col} Columns:</Label>
-                <DragDropContext onDragEnd={(result) => onDragEnd(result, col)}>
-                  <Droppable droppableId={col} isDropDisabled={false} isCombineEnabled={false}>
-                    {(provided) => (
-                      <ul {...provided.droppableProps} ref={provided.innerRef} className="list-none p-0">
-                        {concatenationRules[col]?.map((selectedColumn, index) => (
-                          <Draggable key={selectedColumn} draggableId={selectedColumn} index={index}>
-                            {(provided) => (
-                              <li
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className="bg-secondary p-2 mb-1 rounded flex items-center justify-between"
-                              >
-                                {selectedColumn}
-                              </li>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </ul>
-                    )}
-                  </Droppable>
-                </DragDropContext>
                 <select
                   multiple
                   value={concatenationRules[col] || []}
-                  onChange={(e) => {
-                    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                    handleConcatenationRuleChange(col, selectedOptions);
-                  }}
+                  onChange={(e) => handleColumnSelect(e, col)}
                   className="w-full p-2 border rounded"
                 >
                   {Object.keys(csvData[0]).map(header => {
-                    // Only show columns that are mapped to this target column
-                    if (Object.keys(columnMappings).find(key => columnMappings[key] === col && key === header)) {
-                      return <option key={header} value={header}>{header}</option>;
-                    } else {
-                      return null;
+                    if (columnMappings[header] === col || concatenationRules[col]?.includes(header)) {
+                      return (
+                        <option
+                          key={header}
+                          value={header}
+                        >
+                          {header}
+                        </option>
+                      );
                     }
+                    return null;
                   })}
                 </select>
               </div>
