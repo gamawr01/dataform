@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,10 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Copy, Download, Upload } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ai } from '@/ai/ai-instance';
+import { suggestDataFormat } from '@/ai/flows/suggest-data-format-flow';
+import { useEffect } from 'react';
+import * as XLSX from 'xlsx';
 
 interface DataTableProps {
   data: any[];
@@ -44,7 +48,7 @@ const DataTable = ({ data }: DataTableProps) => {
           {data.map((row, index) => (
             <TableRow key={index}>
               {headers.map((header) => (
-                <TableCell key={header}>{row[header]}</TableCell>
+                <TableCell key={header}>{row[header] || 'NULL'}</TableCell>
               ))}
             </TableRow>
         ))}
@@ -57,61 +61,109 @@ const DataTable = ({ data }: DataTableProps) => {
 const DataForm = () => {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvData, setCsvData] = useState<any[]>([]);
+    const [presentColumns, setPresentColumns] = useState<string[]>([]);
   const [columnMappings, setColumnMappings] = useState<{
     [key: string]: string;
   }>({});
-  const [concatenationRules, setConcatenationRules] = useState<{
-    [key: string]: { column: string; order: number }[];
-  }>({});
   const [formattedData, setFormattedData] = useState<any[]>([]);
   const { toast } = useToast();
+  const [isAiSuggesting, setIsAiSuggesting] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setCsvFile(file);
-      parseCSV(file);
-    }
+      const file = e.target.files?.[0];
+      if (file) {
+          setCsvFile(file);
+          parseCSV(file);
+      }
   };
 
   const parseCSV = (file: File) => {
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const csvText = event.target?.result as string;
-      const parsedData = csvToArray(csvText);
-      if (parsedData.length > 0) {
-        setCsvData(parsedData);
-        // Initialize column mappings with default strings
-        const initialMappings: { [key: string]: string } = {};
-        Object.keys(parsedData[0]).forEach((key) => {
-          initialMappings[key] = "Descartar";
-        });
-        setColumnMappings(initialMappings);
-      } else {
-        toast({
-          title: "Erro",
-          description: "Não foi possível analisar o arquivo CSV.",
-          variant: "destructive",
-        });
-      }
+    reader.onload = async (event) => {
+        try {
+            const fileType = file.name.split('.').pop()?.toLowerCase();
+            let parsedData: any[];
+
+            if (fileType === 'csv') {
+                const csvText = event.target?.result as string;
+                parsedData = csvToArray(csvText);
+            } else if (fileType === 'xlsx') {
+                const buffer = event.target?.result as ArrayBuffer;
+                parsedData = await excelToArray(buffer);
+            } else {
+                toast({
+                    title: "Erro",
+                    description: "Formato de arquivo não suportado. Use .csv ou .xlsx.",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            if (parsedData.length > 0) {
+                setCsvData(parsedData);
+                  const initialPresentColumns = Object.keys(parsedData[0]).filter(
+                      (key) => parsedData[0][key] !== null && parsedData[0][key] !== undefined && parsedData[0][key] !== ''
+                  );
+                setPresentColumns(initialPresentColumns);
+                const initialMappings: { [key: string]: string } = {};
+                  Object.keys(parsedData[0]).forEach((key) => {
+                      initialMappings[key] = "Descartar";
+                  });
+                setColumnMappings(initialMappings);
+            } else {
+                toast({
+                    title: "Erro",
+                    description: "Não foi possível analisar o arquivo.",
+                    variant: "destructive",
+                });
+            }
+        } catch (error) {
+            console.error("Erro ao analisar o arquivo:", error);
+            toast({
+                title: "Erro",
+                description: "Erro ao analisar o arquivo.",
+                variant: "destructive",
+            });
+        }
     };
-    reader.readAsText(file);
-  };
+
+    if (file.name.endsWith('.xlsx')) {
+        reader.readAsArrayBuffer(file);
+    } else {
+        reader.readAsText(file);
+    }
+};
 
   const csvToArray = (csv: string): any[] => {
-    const lines = csv.split("\n");
-    const headers = lines[0].split(",").map((header: string) => header.trim());
-    const result: any[] = [];
-    for (let i = 1; i < lines.length; i++) {
-      const obj: { [key: string]: string } = {};
-      const currentLine = lines[i].split(",");
-      for (let j = 0; j < headers.length; j++) {
-        obj[headers[j]] = currentLine[j] ? currentLine[j].trim() : "";
+      const lines = csv.split("\n");
+      const headers = lines[0].split(",").map((header: string) => header.trim());
+      const result: any[] = [];
+
+      for (let i = 1; i < lines.length; i++) {
+          const obj: { [key: string]: string } = {};
+          const currentLine = lines[i].split(",");
+          for (let j = 0; j < headers.length; j++) {
+              obj[headers[j]] = currentLine[j] ? currentLine[j].trim() : "NULL";
+          }
+          result.push(obj);
       }
-      result.push(obj);
-    }
-    return result;
+      return result;
   };
+
+    const excelToArray = (buffer: ArrayBuffer): Promise<any[]> => {
+        return new Promise((resolve, reject) => {
+            try {
+                const workbook = XLSX.read(buffer, { type: 'buffer' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const data: any[] = XLSX.utils.sheet_to_json(worksheet, { raw: true, defval: "NULL" });
+                resolve(data);
+            } catch (error) {
+                console.error("Erro ao analisar o arquivo XLSX:", error);
+                reject(error);
+            }
+        });
+    };
 
   const handleColumnMappingChange = (header: string, targetColumn: string) => {
     setColumnMappings((prevMappings) => ({
@@ -120,52 +172,45 @@ const DataForm = () => {
     }));
   };
 
-  const formatData = () => {
-    const formatted: any[] = csvData.map((item) => {
-      const newItem: { [key: string]: string } = {};
-       const targetColumnsUsed: { [key: string]: boolean } = {};
-
-      Object.keys(item).forEach(originalColumn => {
-        const targetColumn = columnMappings[originalColumn];
-
-        if (targetColumn && targetColumn !== "Descartar") {
-          newItem[targetColumn] = item[originalColumn] || '';
-           targetColumnsUsed[targetColumn] = true;
-        }
-      });
-
-      Object.keys(concatenationRules).forEach((targetColumn) => {
-        if (targetColumn !== "Descartar") {
-          const selectedColumns = concatenationRules[targetColumn];
-          if (selectedColumns && selectedColumns.length > 0) {
-            try {
-              newItem[targetColumn] = selectedColumns
-                .map((col) => item[col.column] || "")
-                .join(" ");
-               targetColumnsUsed[targetColumn] = true;
-            } catch (error) {
-              console.error("Error evaluating rule:", error);
-              toast({
-                title: "Erro",
-                description: `Erro ao avaliar a regra para a coluna ${targetColumn}.`,
-                variant: "destructive",
-              });
-              newItem[targetColumn] = "Error";
+    const formatDate = (dateString: string | null | undefined): string => {
+        if (!dateString) return '';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return dateString; // Return the original string if parsing fails
             }
-          }
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = String(date.getFullYear());
+            return `${day}/${month}/${year}`;
+        } catch (error) {
+            console.error("Error formatting date:", error);
+            return dateString; // Return the original string if formatting fails
         }
+    };
+
+  const formatData = () => {
+      const formatted: any[] = csvData.map((item) => {
+          const newItem: { [key: string]: string } = {};
+          Object.keys(item).forEach(key => {
+              const targetColumn = columnMappings[key];
+              if (targetColumn && targetColumn !== "Descartar") {
+                  if (targetColumn === "Data Nascimento") {
+                      newItem[targetColumn] = formatDate(item[key]);
+                  } else {
+                      newItem[targetColumn] = item[key] === 'NULL' ? '' : item[key];
+                  }
+              }
+          });
+
+          const finalItem: { [key: string]: string } = {};
+          Object.keys(newItem)
+              .sort()
+              .forEach(key => {
+                  finalItem[key] = newItem[key];
+              });
+          return finalItem;
       });
-
-      // Ensure only columns that are mapped or part of concatenation rules are included
-      const finalItem: { [key: string]: string } = {};
-      Object.keys(newItem)
-        .sort()
-        .forEach(key => {
-          finalItem[key] = newItem[key];
-        });
-
-      return finalItem;
-    });
     setFormattedData(formatted);
   };
 
@@ -263,31 +308,55 @@ const DataForm = () => {
     "Descartar",
   ];
 
-  const handleConcatenationOrderChange = (targetColumn: string, header: string, order: number) => {
-    setConcatenationRules(prevRules => {
-      const newRules = { ...prevRules };
-      if (!newRules[targetColumn]) {
-        newRules[targetColumn] = [];
-      }
-      const existingColumnIndex = newRules[targetColumn].findIndex(col => col.column === header);
-      if (existingColumnIndex !== -1) {
-        newRules[targetColumn][existingColumnIndex] = { column: header, order: order };
-      } else {
-        newRules[targetColumn].push({ column: header, order: order });
-      }
-      newRules[targetColumn].sort((a, b) => a.order - b.order);
-      return newRules;
-    });
-  };
+  const suggestMappings = async () => {
+    if (!csvData || csvData.length === 0) {
+      toast({
+        title: "Aviso",
+        description: "Por favor, carregue um arquivo CSV primeiro.",
+      });
+      return;
+    }
 
-  const getColumnOrder = (targetColumn: string, header: string): number | undefined => {
-    return concatenationRules[targetColumn]?.find(col => col.column === header)?.order;
+    setIsAiSuggesting(true);
+    try {
+      const csvString = csvData.map(row => Object.values(row).join(',')).join('\n');
+      const targetColumnsString = JSON.stringify(targetColumns);
+      const presentColumnsString = JSON.stringify(presentColumns);
+      const response = await suggestDataFormat({
+        csvData: csvString,
+        targetColumns: targetColumnsString,
+        presentColumns: presentColumnsString,
+      });
+
+      if (response && response.columnMappings) {
+        setColumnMappings(response.columnMappings);
+        toast({
+          title: "Sucesso",
+          description: "Sugestões de mapeamento aplicadas!",
+        });
+      } else {
+        toast({
+          title: "Aviso",
+          description: "Não foi possível obter sugestões de mapeamento.",
+          variant: "warning",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao obter sugestões de mapeamento:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao obter sugestões de mapeamento.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiSuggesting(false);
+    }
   };
 
   return (
     <div className="container py-8">
       <div className="mb-4">
-        <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mr-2" style={{fontSize: '18px'}} htmlFor="csvUpload">
+        <Label className="text-base font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mr-2" htmlFor="csvUpload">
           Carregar Arquivo CSV:
         </Label>
         <Input
@@ -305,6 +374,13 @@ const DataForm = () => {
           <div className="mb-4">
             <h2>Mapeamento de Colunas</h2>
             <p>Mapeie as colunas de origem para as colunas de destino.</p>
+              <Button
+                  onClick={suggestMappings}
+                  disabled={isAiSuggesting}
+                  className="mb-4 bg-accent text-white hover:bg-teal-700"
+              >
+                  {isAiSuggesting ? "Sugerindo..." : "Sugerir Mapeamento"}
+              </Button>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.keys(csvData[0]).map((header) => (
                 <div key={header} className="flex flex-col">
@@ -314,7 +390,7 @@ const DataForm = () => {
                   <Select
                     id={`mapping-${header}`}
                     className="p-2 rounded bg-muted"
-                    defaultValue="Descartar"
+                    defaultValue={columnMappings[header] || "Descartar"}
                     onValueChange={(value) =>
                       handleColumnMappingChange(header, value)
                     }
@@ -332,9 +408,11 @@ const DataForm = () => {
                                 return null;
                               }
                               usedColumns.add(col);
-                              return (
-                                <SelectItem key={col} value={col}>{col}</SelectItem>
-                              );
+                                    return (
+                                        <SelectItem key={col} value={col}>
+                                            {col}
+                                        </SelectItem>
+                                    );
                             })
                           )
                         })()
@@ -343,52 +421,6 @@ const DataForm = () => {
                   </Select>
                 </div>
               ))}
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <h2>Regras de Concatenação</h2>
-            <p>Defina as regras para concatenar múltiplas colunas em uma única coluna de destino.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {targetColumns
-                .filter((col) => col !== "Descartar")
-                .map((col) => (
-                  <div key={col} className="mb-2">
-                    <Label htmlFor={`rule-${col}`}>{col} Colunas:</Label>
-                    <div className="grid grid-cols-3 gap-2 p-4 rounded-md bg-muted">
-                      {Object.keys(csvData[0])
-                        .filter(header => columnMappings[header] === col)
-                        .map(header => {
-                          return (
-                            <div key={header} className="flex items-center">
-                              <Label htmlFor={`order-${col}-${header}`} className="mr-2">
-                                {header}
-                              </Label>
-                              <Select
-                                id={`order-${col}-${header}`}
-                                defaultValue={getColumnOrder(col, header)?.toString() || ""}
-                                onValueChange={(value) => {
-                                  const order = parseInt(value, 10);
-                                  handleConcatenationOrderChange(col, header, order);
-                                }}
-                              >
-                                <SelectTrigger className="w-[80px] bg-muted">
-                                  <SelectValue placeholder="Ordem" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-muted">
-                                  {[...Array(Object.keys(csvData[0]).length)].map((_, i) => (
-                                    <SelectItem key={i + 1} value={(i + 1).toString()}>
-                                      {i + 1}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
-                ))}
             </div>
           </div>
 
@@ -431,5 +463,3 @@ const DataForm = () => {
 };
 
 export default DataForm;
-
-

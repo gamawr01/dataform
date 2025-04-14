@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Copy, Download, Upload } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import * as XLSX from 'xlsx';
 
 interface DataTableProps {
   data: any[];
@@ -63,52 +64,98 @@ const ProductDataForm = () => {
   const [formattedData, setFormattedData] = useState<any[]>([]);
   const { toast } = useToast();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setCsvFile(file);
-      parseCSV(file);
-    }
-  };
-
-  const parseCSV = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const csvText = event.target?.result as string;
-      const parsedData = csvToArray(csvText);
-      if (parsedData.length > 0) {
-        setCsvData(parsedData);
-        // Initialize column mappings with default strings
-        const initialMappings: { [key: string]: string } = {};
-        Object.keys(parsedData[0]).forEach((key) => {
-          initialMappings[key] = "Descartar";
-        });
-        setColumnMappings(initialMappings);
-      } else {
-        toast({
-          title: "Erro",
-          description: "Não foi possível analisar o arquivo CSV.",
-          variant: "destructive",
-        });
-      }
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setCsvFile(file);
+            parseCSV(file);
+        }
     };
-    reader.readAsText(file);
-  };
 
-  const csvToArray = (csv: string): any[] => {
-    const lines = csv.split("\n");
-    const headers = lines[0].split(",").map((header: string) => header.trim());
-    const result: any[] = [];
-    for (let i = 1; i < lines.length; i++) {
-      const obj: { [key: string]: string } = {};
-      const currentLine = lines[i].split(",");
-      for (let j = 0; j < headers.length; j++) {
-        obj[headers[j]] = currentLine[j] ? currentLine[j].trim() : "";
-      }
-      result.push(obj);
-    }
-    return result;
-  };
+    const parseCSV = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const fileType = file.name.split('.').pop()?.toLowerCase();
+                let parsedData: any[];
+
+                if (fileType === 'csv') {
+                    const csvText = event.target?.result as string;
+                    parsedData = csvToArray(csvText);
+                } else if (fileType === 'xlsx') {
+                    const buffer = event.target?.result as ArrayBuffer;
+                    parsedData = await excelToArray(buffer);
+                } else {
+                    toast({
+                        title: "Erro",
+                        description: "Formato de arquivo não suportado. Use .csv ou .xlsx.",
+                        variant: "destructive",
+                    });
+                    return;
+                }
+
+                if (parsedData.length > 0) {
+                    setCsvData(parsedData);
+                    // Initialize column mappings with default strings
+                    const initialMappings: { [key: string]: string } = {};
+                    Object.keys(parsedData[0]).forEach((key) => {
+                        initialMappings[key] = "Descartar";
+                    });
+                    setColumnMappings(initialMappings);
+                } else {
+                    toast({
+                        title: "Erro",
+                        description: "Não foi possível analisar o arquivo.",
+                        variant: "destructive",
+                    });
+                }
+            } catch (error) {
+                console.error("Erro ao analisar o arquivo:", error);
+                toast({
+                    title: "Erro",
+                    description: "Erro ao analisar o arquivo.",
+                    variant: "destructive",
+                });
+            }
+        };
+
+        if (file.name.endsWith('.xlsx')) {
+            reader.readAsArrayBuffer(file);
+        } else {
+            reader.readAsText(file);
+        }
+    };
+
+    const csvToArray = (csv: string): any[] => {
+        const lines = csv.split("\n");
+        const headers = lines[0].split(",").map((header: string) => header.trim());
+        const result: any[] = [];
+        for (let i = 1; i < lines.length; i++) {
+            const obj: { [key: string]: string } = {};
+            const currentLine = lines[i].split(",");
+            for (let j = 0; j < headers.length; j++) {
+                obj[headers[j]] = currentLine[j] ? currentLine[j].trim() : "";
+            }
+            result.push(obj);
+        }
+        return result;
+    };
+
+    const excelToArray = (buffer: ArrayBuffer): Promise<any[]> => {
+        return new Promise((resolve, reject) => {
+            try {
+                const workbook = XLSX.read(buffer, { type: 'buffer' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const data: any[] = XLSX.utils.sheet_to_json(worksheet, { raw: true });
+                resolve(data);
+            } catch (error) {
+                console.error("Erro ao analisar o arquivo XLSX:", error);
+                reject(error);
+            }
+        });
+    };
+
 
   const handleColumnMappingChange = (header: string, targetColumn: string) => {
     setColumnMappings((prevMappings) => ({
