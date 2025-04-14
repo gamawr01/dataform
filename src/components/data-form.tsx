@@ -321,7 +321,7 @@ const DataForm = () => {
     try {
       const csvString = csvData.map(row => Object.values(row).join(',')).join('\n');
       const targetColumnsString = JSON.stringify(targetColumns);
-      const presentColumnsString = JSON.stringify(presentColumns);
+          const presentColumnsString = JSON.stringify(presentColumns);
       const response = await suggestDataFormat({
         csvData: csvString,
         targetColumns: targetColumnsString,
