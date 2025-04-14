@@ -17,9 +17,6 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Copy, Download, Upload } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ai } from '@/ai/ai-instance';
-import { suggestDataFormat } from '@/ai/flows/suggest-data-format-flow';
-import { useEffect } from 'react';
 import * as XLSX from 'xlsx';
 
 interface DataTableProps {
@@ -61,13 +58,12 @@ const DataTable = ({ data }: DataTableProps) => {
 const DataForm = () => {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvData, setCsvData] = useState<any[]>([]);
-    const [presentColumns, setPresentColumns] = useState<string[]>([]);
+  const [presentColumns, setPresentColumns] = useState<string[]>([]);
   const [columnMappings, setColumnMappings] = useState<{
     [key: string]: string;
   }>({});
   const [formattedData, setFormattedData] = useState<any[]>([]);
   const { toast } = useToast();
-  const [isAiSuggesting, setIsAiSuggesting] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -308,51 +304,6 @@ const DataForm = () => {
     "Descartar",
   ];
 
-  const suggestMappings = async () => {
-    if (!csvData || csvData.length === 0) {
-      toast({
-        title: "Aviso",
-        description: "Por favor, carregue um arquivo CSV primeiro.",
-      });
-      return;
-    }
-
-    setIsAiSuggesting(true);
-    try {
-      const csvString = csvData.map(row => Object.values(row).join(',')).join('\n');
-      const targetColumnsString = JSON.stringify(targetColumns);
-          const presentColumnsString = JSON.stringify(presentColumns);
-      const response = await suggestDataFormat({
-        csvData: csvString,
-        targetColumns: targetColumnsString,
-        presentColumns: presentColumnsString,
-      });
-
-      if (response && response.columnMappings) {
-        setColumnMappings(response.columnMappings);
-        toast({
-          title: "Sucesso",
-          description: "Sugestões de mapeamento aplicadas!",
-        });
-      } else {
-        toast({
-          title: "Aviso",
-          description: "Não foi possível obter sugestões de mapeamento.",
-          variant: "warning",
-        });
-      }
-    } catch (error) {
-      console.error("Erro ao obter sugestões de mapeamento:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao obter sugestões de mapeamento.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAiSuggesting(false);
-    }
-  };
-
   return (
     <div className="container py-8">
       <div className="mb-4">
@@ -374,13 +325,6 @@ const DataForm = () => {
           <div className="mb-4">
             <h2>Mapeamento de Colunas</h2>
             <p>Mapeie as colunas de origem para as colunas de destino.</p>
-              <Button
-                  onClick={suggestMappings}
-                  disabled={isAiSuggesting}
-                  className="mb-4 bg-accent text-white hover:bg-teal-700"
-              >
-                  {isAiSuggesting ? "Sugerindo..." : "Sugerir Mapeamento"}
-              </Button>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.keys(csvData[0]).map((header) => (
                 <div key={header} className="flex flex-col">
