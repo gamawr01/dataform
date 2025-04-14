@@ -45,7 +45,7 @@ const DataTable = ({ data }: DataTableProps) => {
           {data.map((row, index) => (
             <TableRow key={index}>
               {headers.map((header) => (
-                <TableCell key={header}>{row[header] || 'NULL'}</TableCell>
+                <TableCell key={header}>{row[header] || ''}</TableCell>
               ))}
             </TableRow>
         ))}
@@ -139,7 +139,7 @@ const DataForm = () => {
           const obj: { [key: string]: string } = {};
           const currentLine = lines[i].split(",");
           for (let j = 0; j < headers.length; j++) {
-              obj[headers[j]] = currentLine[j] ? currentLine[j].trim() : "NULL";
+              obj[headers[j]] = currentLine[j] ? currentLine[j].trim() : "";
           }
           result.push(obj);
       }
@@ -152,7 +152,7 @@ const DataForm = () => {
                 const workbook = XLSX.read(buffer, { type: 'buffer' });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
-                const data: any[] = XLSX.utils.sheet_to_json(worksheet, { raw: true, defval: "NULL" });
+                const data: any[] = XLSX.utils.sheet_to_json(worksheet, { raw: true, defval: "" });
                 resolve(data);
             } catch (error) {
                 console.error("Erro ao analisar o arquivo XLSX:", error);
