@@ -97,9 +97,7 @@ const DataForm = () => {
 
             if (parsedData.length > 0) {
                 setCsvData(parsedData);
-                  const initialPresentColumns = Object.keys(parsedData[0]).filter(
-                      (key) => parsedData[0][key] !== null && parsedData[0][key] !== undefined && parsedData[0][key] !== ''
-                  );
+                const initialPresentColumns = Object.keys(parsedData[0]);
                 setPresentColumns(initialPresentColumns);
                 const initialMappings: { [key: string]: string } = {};
                   Object.keys(parsedData[0]).forEach((key) => {
@@ -152,7 +150,7 @@ const DataForm = () => {
                 const workbook = XLSX.read(buffer, { type: 'buffer' });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
-                const data: any[] = XLSX.utils.sheet_to_json(worksheet, { raw: true, defval: "" });
+                const data: any[] = XLSX.utils.sheet_to_json(worksheet, { raw: true, defval: null });
                 resolve(data);
             } catch (error) {
                 console.error("Erro ao analisar o arquivo XLSX:", error);
@@ -195,10 +193,27 @@ const DataForm = () => {
         if (targetColumn && targetColumn !== "Descartar") {
             if (targetColumn === "Número") {
                 let originalValue = item[originalColumn] || '';
-                originalValue = String(originalValue);
-                const numbersOnly = originalValue.replace(/[^0-9]/g, '');
-                newItem[targetColumn] = numbersOnly;
-            } else if (targetColumn === "Data Nascimento") {
+                if (typeof originalValue === 'string') {
+                    originalValue = originalValue.replace(/[^0-9]/g, '');
+                } else if (typeof originalValue === 'number') {
+                    originalValue = String(originalValue);
+                } else {
+                    originalValue = '';
+                }
+                newItem[targetColumn] = originalValue;
+            } else if (targetColumn === "CNPJ/CPF") {
+                  let originalValue = item[originalColumn] || '';
+                   if (typeof originalValue === 'string') {
+                      originalValue = originalValue.replace(/[^0-9]/g, '');
+                   } else if (typeof originalValue === 'number') {
+                      originalValue = String(originalValue);
+                   } else {
+                       originalValue = '';
+                   }
+                  newItem[targetColumn] = originalValue;
+              }
+            
+             else if (targetColumn === "Data Nascimento") {
                   newItem[targetColumn] = formatDate(item[originalColumn]);
               }
             
