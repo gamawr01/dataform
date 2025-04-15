@@ -39,7 +39,7 @@
     --sidebar-ring: 180 100% 25%; /* Teal */
   }
   .dark {
-    --background: 220 10% 3.9%; /* Dark gray */
+    --background: 0 0% 100%; /* Dark gray */
     --foreground: 0 0% 98%; /* Near white */
     --card: 220 10% 3.9%; /* Dark gray */
     --card-foreground: 0 0% 98%; /* Near white */
@@ -82,4 +82,3 @@
     @apply bg-background text-foreground;
   }
 }
-
