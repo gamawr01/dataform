@@ -186,27 +186,35 @@ const DataForm = () => {
     };
 
   const formatData = () => {
-      const formatted: any[] = csvData.map((item) => {
-          const newItem: { [key: string]: string } = {};
-          Object.keys(item).forEach(key => {
-              const targetColumn = columnMappings[key];
-              if (targetColumn && targetColumn !== "Descartar") {
-                  if (targetColumn === "Data Nascimento") {
-                      newItem[targetColumn] = formatDate(item[key]);
-                  } else {
-                      newItem[targetColumn] = item[key] === 'NULL' ? '' : item[key];
-                  }
-              }
-          });
+    const formatted: any[] = csvData.map((item) => {
+      const newItem: { [key: string]: string } = {};
 
-          const finalItem: { [key: string]: string } = {};
-          Object.keys(newItem)
-              .sort()
-              .forEach(key => {
-                  finalItem[key] = newItem[key];
-              });
-          return finalItem;
+      Object.keys(item).forEach(originalColumn => {
+        const targetColumn = columnMappings[originalColumn];
+
+        if (targetColumn && targetColumn !== "Descartar") {
+            if (targetColumn === "Número") {
+                const originalValue = item[originalColumn] || '';
+                const numbersOnly = originalValue.replace(/[^0-9]/g, '');
+                newItem[targetColumn] = numbersOnly;
+            } else if (targetColumn === "Data Nascimento") {
+                  newItem[targetColumn] = formatDate(item[originalColumn]);
+              }
+            
+             else {
+              newItem[targetColumn] = item[originalColumn] || '';
+            }
+        }
       });
+
+      const finalItem: { [key: string]: string } = {};
+        Object.keys(newItem)
+            .sort()
+            .forEach(key => {
+                finalItem[key] = newItem[key];
+            });
+        return finalItem;
+    });
     setFormattedData(formatted);
   };
 
@@ -334,7 +342,7 @@ const DataForm = () => {
                   <Select
                     id={`mapping-${header}`}
                     className="p-2 rounded bg-muted"
-                    defaultValue={columnMappings[header] || "Descartar"}
+                    defaultValue={"Descartar"}
                     onValueChange={(value) =>
                       handleColumnMappingChange(header, value)
                     }
