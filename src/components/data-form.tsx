@@ -194,7 +194,8 @@ const DataForm = () => {
 
         if (targetColumn && targetColumn !== "Descartar") {
             if (targetColumn === "Número") {
-                const originalValue = item[originalColumn] || '';
+                let originalValue = item[originalColumn] || '';
+                originalValue = String(originalValue);
                 const numbersOnly = originalValue.replace(/[^0-9]/g, '');
                 newItem[targetColumn] = numbersOnly;
             } else if (targetColumn === "Data Nascimento") {
