@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -413,7 +411,7 @@ const DataForm = () => {
 
                     <Button
                         onClick={formatData}
-                        className="mb-4 bg-accent text-white hover:bg-teal-700"
+                        className="mb-4 bg-primary text-primary-foreground hover:bg-primary/90"
                     >
                         Formatar Dados
                     </Button>
