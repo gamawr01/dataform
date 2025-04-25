@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   output: 'export',
+  basePath: '/dataform',
+  assetPrefix: '/dataform/',
   eslint: {
     ignoreDuringBuilds: true,
   },
