@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
+  console.log('page.tsx loaded');
   const [formType, setFormType] = useState<"customer" | "product">("customer");
 
   return (
